@@ -1,0 +1,13 @@
+# Ollama configuration
+ollama_models_dir: /games/models/ollama
+ollama_host: "http://localhost:11434"
+ollama_old_models_dir: /usr/share/ollama/.ollama/models
+
+# Models to pull (tuned for 12GB VRAM)
+ollama_models:
+  - qwen2.5-coder:14b    # ~9GB  - Primary coding model with tool-calling support
+  - qwen2.5:7b           # ~4.7GB - Fast general-purpose model
+  - deepseek-r1:7b       # ~4.7GB - Reasoning model
+
+# Goose configuration
+goose_default_model: qwen2.5-coder:14b

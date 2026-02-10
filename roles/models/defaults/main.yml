@@ -1,0 +1,7 @@
+---
+# Default models tuned for 12GB VRAM (NVIDIA RTX 4070 Super)
+# Override in group_vars/all.yml
+ollama_models:
+  - qwen2.5-coder:14b
+  - qwen2.5:7b
+  - deepseek-r1:7b

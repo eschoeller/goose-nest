@@ -1,0 +1,8 @@
+---
+- name: Pull Ollama models
+  ansible.builtin.command: ollama pull {{ item }}
+  loop: "{{ ollama_models }}"
+  register: pull_result
+  changed_when: "'pulling' in pull_result.stdout | default('')"
+  async: 3600
+  poll: 30

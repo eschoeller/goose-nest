@@ -1,0 +1,63 @@
+---
+- name: Check if Ollama is installed
+  ansible.builtin.command: which ollama
+  register: ollama_check
+  changed_when: false
+  failed_when: false
+
+- name: Install Ollama via official script
+  ansible.builtin.shell: curl -fsSL https://ollama.com/install.sh | sh
+  when: ollama_check.rc != 0
+  become: true
+
+- name: Create models directory
+  ansible.builtin.file:
+    path: "{{ ollama_models_dir }}"
+    state: directory
+    owner: ollama
+    group: ollama
+    mode: "0755"
+  become: true
+
+- name: Create systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/ollama.service.d
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Deploy systemd override for OLLAMA_MODELS path
+  ansible.builtin.template:
+    src: ollama-override.conf.j2
+    dest: /etc/systemd/system/ollama.service.d/override.conf
+    mode: "0644"
+  become: true
+  notify: Restart ollama
+
+- name: Check for existing models at old location
+  ansible.builtin.stat:
+    path: "{{ ollama_old_models_dir }}"
+  register: old_models_dir
+
+- name: Migrate existing models to new location
+  ansible.builtin.shell: |
+    if [ -d "{{ ollama_old_models_dir }}" ] && [ "$(ls -A {{ ollama_old_models_dir }})" ]; then
+      rsync -a --ignore-existing {{ ollama_old_models_dir }}/ {{ ollama_models_dir }}/
+      chown -R ollama:ollama {{ ollama_models_dir }}
+    fi
+  become: true
+  when: old_models_dir.stat.exists and old_models_dir.stat.isdir
+  register: migration_result
+  changed_when: "'total size' not in migration_result.stdout | default('')"
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: Ensure Ollama service is enabled and running
+  ansible.builtin.systemd:
+    name: ollama
+    state: started
+    enabled: true
+  become: true

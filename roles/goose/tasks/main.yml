@@ -1,0 +1,18 @@
+---
+- name: Check if Goose CLI is installed
+  ansible.builtin.command: which goose
+  register: goose_check
+  changed_when: false
+  failed_when: false
+
+- name: Install Goose CLI
+  ansible.builtin.shell: curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash
+  when: goose_check.rc != 0
+
+- name: Ensure OLLAMA_HOST is set in shell profile
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    regexp: '^export OLLAMA_HOST='
+    line: 'export OLLAMA_HOST="{{ ollama_host }}"'
+    create: true
+    mode: "0644"
