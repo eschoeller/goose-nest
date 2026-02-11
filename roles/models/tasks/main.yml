@@ -4,5 +4,6 @@
   loop: "{{ ollama_models }}"
   register: pull_result
   changed_when: "'pulling' in pull_result.stdout | default('')"
+  when: not ansible_check_mode
   async: 3600
   poll: 30
