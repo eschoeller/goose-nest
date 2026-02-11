@@ -4,6 +4,7 @@
   register: nvidia_smi_check
   changed_when: false
   failed_when: nvidia_smi_check.rc != 0
+  check_mode: false
 
 - name: Fail if no NVIDIA GPU detected
   ansible.builtin.fail:
@@ -13,16 +14,20 @@
   when: nvidia_smi_check.rc != 0
 
 - name: Query GPU information
-  ansible.builtin.command: >
-    nvidia-smi --query-gpu=name,memory.total,driver_version
-    --format=csv,noheader,nounits
+  ansible.builtin.command:
+    argv:
+      - nvidia-smi
+      - --query-gpu=name,memory.total,driver_version
+      - --format=csv,noheader,nounits
   register: gpu_info
   changed_when: false
+  check_mode: false
 
 - name: Query CUDA version
   ansible.builtin.shell: "nvidia-smi | grep -oP 'CUDA Version: \\K[\\d.]+'"
   register: cuda_version
   changed_when: false
+  check_mode: false
 
 - name: Display GPU information
   ansible.builtin.debug:
