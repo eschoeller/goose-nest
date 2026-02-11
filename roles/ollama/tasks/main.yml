@@ -5,10 +5,33 @@
   changed_when: false
   failed_when: false
 
-- name: Install Ollama via official script
+- name: Get installed Ollama version
+  ansible.builtin.shell: ollama --version | grep -oP '[\d.]+'
+  register: ollama_installed_version
+  changed_when: false
+  when: ollama_check.rc == 0
+
+- name: Get latest Ollama version from GitHub
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/ollama/ollama/releases/latest
+    return_content: true
+  register: ollama_latest_release
+  check_mode: false
+
+- name: Set Ollama version facts
+  ansible.builtin.set_fact:
+    ollama_current: "{{ ollama_installed_version.stdout | default('none') }}"
+    ollama_latest: "{{ (ollama_latest_release.json.tag_name | regex_replace('^v', '')) }}"
+
+- name: Display Ollama version status
+  ansible.builtin.debug:
+    msg: "Ollama: installed={{ ollama_current }}, latest={{ ollama_latest }}"
+
+- name: Install or upgrade Ollama
   ansible.builtin.shell: curl -fsSL https://ollama.com/install.sh | sh
-  when: ollama_check.rc != 0
+  when: ollama_check.rc != 0 or ollama_current != ollama_latest
   become: true
+  notify: Restart ollama
 
 - name: Create models directory
   ansible.builtin.file:
@@ -34,6 +57,9 @@
   become: true
   notify: Restart ollama
 
+- name: Flush handlers to restart Ollama before migration
+  ansible.builtin.meta: flush_handlers
+
 - name: Check for existing models at old location
   ansible.builtin.stat:
     path: "{{ ollama_old_models_dir }}"
@@ -42,13 +68,14 @@
 - name: Migrate existing models to new location
   ansible.builtin.shell: |
     if [ -d "{{ ollama_old_models_dir }}" ] && [ "$(ls -A {{ ollama_old_models_dir }})" ]; then
-      rsync -a --ignore-existing {{ ollama_old_models_dir }}/ {{ ollama_models_dir }}/
+      mv {{ ollama_old_models_dir }}/* {{ ollama_models_dir }}/
       chown -R ollama:ollama {{ ollama_models_dir }}
+      rm -rf {{ ollama_old_models_dir }}
     fi
   become: true
   when: old_models_dir.stat.exists and old_models_dir.stat.isdir
   register: migration_result
-  changed_when: "'total size' not in migration_result.stdout | default('')"
+  changed_when: migration_result.rc == 0
 
 - name: Reload systemd daemon
   ansible.builtin.systemd:
