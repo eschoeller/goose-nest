@@ -3,11 +3,13 @@ ollama_models_dir: /games/models/ollama
 ollama_host: "http://localhost:11434"
 ollama_old_models_dir: /usr/share/ollama/.ollama/models
 
-# Models to pull (tuned for 12GB VRAM)
+# Models to pull (tuned for 12GB VRAM + 30GB RAM)
 ollama_models:
-  - qwen2.5-coder:14b    # ~9GB  - Primary coding model with tool-calling support
+  - qwen3-coder-next:30b      # ~19GB - MoE (3.3B active), best tool-calling for Goose
+  - qwen3-coder:30b
+  - qwen2.5-coder:14b    # ~9GB  - Dense coding model, fits fully in VRAM
   - qwen2.5:7b           # ~4.7GB - Fast general-purpose model
-  - deepseek-r1:7b       # ~4.7GB - Reasoning model
+  - kimi-k2.5:7b         # ~4.7GB - Reasoning model
 
 # Goose configuration
-goose_default_model: qwen2.5-coder:14b
+goose_default_model: qwen3-coder-next:30b
