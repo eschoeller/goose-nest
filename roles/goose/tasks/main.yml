@@ -5,9 +5,31 @@
   changed_when: false
   failed_when: false
 
-- name: Install Goose CLI
+- name: Get installed Goose version
+  ansible.builtin.shell: goose -V | grep -oP '[\d.]+'
+  register: goose_installed_version
+  changed_when: false
+  when: goose_check.rc == 0
+
+- name: Get latest Goose version from GitHub
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/block/goose/releases/latest
+    return_content: true
+  register: goose_latest_release
+  check_mode: false
+
+- name: Set Goose version facts
+  ansible.builtin.set_fact:
+    goose_current: "{{ goose_installed_version.stdout | default('none') }}"
+    goose_latest: "{{ (goose_latest_release.json.tag_name | regex_replace('^v', '')) }}"
+
+- name: Display Goose version status
+  ansible.builtin.debug:
+    msg: "Goose: installed={{ goose_current }}, latest={{ goose_latest }}"
+
+- name: Install or upgrade Goose CLI
   ansible.builtin.shell: curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash
-  when: goose_check.rc != 0
+  when: goose_check.rc != 0 or goose_current != goose_latest
 
 - name: Ensure OLLAMA_HOST is set in shell profile
   ansible.builtin.lineinfile:
@@ -16,3 +38,9 @@
     line: 'export OLLAMA_HOST="{{ ollama_host }}"'
     create: true
     mode: "0644"
+
+- name: Remind user to configure Goose
+  ansible.builtin.debug:
+    msg: >
+      Goose is installed. Run 'goose configure' to set up your provider
+      (select Ollama, model: {{ goose_default_model }}).
