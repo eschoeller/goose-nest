@@ -1,4 +1,11 @@
 ---
+- name: Install Goose system dependencies
+  ansible.builtin.apt:
+    name:
+      - xdotool
+    state: present
+  become: true
+
 - name: Check if Goose CLI is installed
   ansible.builtin.command: which goose
   register: goose_check
