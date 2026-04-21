@@ -3,6 +3,7 @@
   ansible.builtin.apt:
     name:
       - xdotool
+      - wmctrl
     state: present
   become: true
 
