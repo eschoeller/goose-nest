@@ -8,6 +8,11 @@ Local AI workstation setup — **Goose** (Block's AI agent) + **Ollama** (local 
 - CUDA toolkit
 - Ansible 2.18+
 - `gh` CLI (for repo management)
+- Classic `sudo` installed (package `sudo`, binary at `/usr/bin/sudo.ws` on
+  Ubuntu). `ansible.cfg` pins `become_exe` to it because `sudo-rs` — now the
+  default `/usr/bin/sudo` on recent Ubuntu — breaks Ansible's `-K` password
+  handshake. If you're on a distro without `sudo.ws`, adjust
+  `become_exe` in `ansible.cfg` to point at your classic sudo binary.
 
 ## Quick Start
 
